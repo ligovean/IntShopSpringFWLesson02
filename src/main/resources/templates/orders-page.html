@@ -36,13 +36,14 @@
             <td th:text="${order.id}"/>
             <td th:text="${order.user.userName}"/>
             <td>
-                <span th:if="${order.status.id == 1}" th:text="${order.status.title}" class="badge badge-danger" />
-                <span th:if="${order.status.id == 2}" th:text="${order.status.title}" class="badge badge-primary" />
+                <span th:if="${order.orderStatus.id == 1}" th:text="${order.orderStatus.title}" class="badge badge-danger" />
+                <span th:if="${order.orderStatus.id == 2}" th:text="${order.orderStatus.title}" class="badge badge-primary" />
             </td>
             <td th:text="${order.createAt}"/>
             <td>
-                <a th:if="${order.status.id == 1}" th:href="@{'/admin/orders/ready/' + ${order.id}}" >Заказ отправлен</a>
-                <a th:href="@{'/admin/orders/info/' + ${order.id}}" >Информация</a>
+                <a th:if="${order.orderStatus.id == 1}" th:href="@{'/admin/orders/ready/' + ${order.id}}" >Заказ отправлен</a>
+<!--                <a th:href="@{'/admin/orders/info/' + ${order.id}}" >Информация</a>-->
+                <a th:href="@{'/order/info/' + ${order.id}}" >Информация</a>
             </td>
         </tr>
         </tbody>

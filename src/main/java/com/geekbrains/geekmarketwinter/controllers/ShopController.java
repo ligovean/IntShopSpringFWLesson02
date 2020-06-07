@@ -1,6 +1,8 @@
 package com.geekbrains.geekmarketwinter.controllers;
 
 import com.geekbrains.geekmarketwinter.entites.DeliveryAddress;
+import com.geekbrains.geekmarketwinter.entites.Order;
+import com.geekbrains.geekmarketwinter.entites.OrderItem;
 import com.geekbrains.geekmarketwinter.entites.Product;
 import com.geekbrains.geekmarketwinter.entites.User;
 import com.geekbrains.geekmarketwinter.repositories.specifications.ProductSpecs;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,12 +30,24 @@ public class ShopController {
 
     private ShoppingCartService shoppingCartService;
 
+    private OrderService orderService;
+
+
     private UserService userService;
+
+    private DeliveryAddressService deliveryAddressService;
 
     @Autowired
     public void setShoppingCartService(ShoppingCartService shoppingCartService) {
         this.shoppingCartService = shoppingCartService;
     }
+
+
+    @Autowired
+    public void setOrderService(OrderService orderService) {
+        this.orderService = orderService;
+    }
+
 
     @Autowired
     public void setUserService(UserService userService) {
@@ -45,6 +60,10 @@ public class ShopController {
         this.productService = productService;
     }
 
+    @Autowired
+    public void setDeliveryAddressService(DeliveryAddressService deliveryAddressService) {
+        this.deliveryAddressService = deliveryAddressService;
+    }
 
     @GetMapping
     public String shopPage(Model model,
@@ -92,37 +111,51 @@ public class ShopController {
         String referrer = httpServletRequest.getHeader("referer");
         return "redirect:" + referrer;
     }
+
+
+    @GetMapping("/order/fill")
+    public String showMyOrdersPage(Model model, HttpServletRequest httpServletRequest, Principal principal){
+
+        User user = userService.findByUserName(principal.getName());
+        Order order = orderService.makeOrder(shoppingCartService.getCurrentCart(httpServletRequest.getSession()),user);
+        model.addAttribute("order", order);
+        List<DeliveryAddress> deliveryAddresses = deliveryAddressService.getAllDeliveryAddresses();
+        model.addAttribute("deliveryAddresses", deliveryAddresses);
+        return "order-filler";
+    }
+
+    @PostMapping("/order/confirm")
+    public String orderConfirm(Model model, HttpServletRequest httpServletRequest, @ModelAttribute(name = "order") Order orderFromFrontend, Principal principal) {
+        if (principal == null) {
+            return "redirect:/login";
+        }
+        User user = userService.findByUserName(principal.getName());
+        Order order = orderService.makeOrder(shoppingCartService.getCurrentCart(httpServletRequest.getSession()), user);
+        order.setDeliveryAddress(orderFromFrontend.getDeliveryAddress());
+        order.setPhoneNumber(orderFromFrontend.getPhoneNumber());
+        order.setDeliveryDate(LocalDateTime.now().plusDays(10));
+        order.setDeliveryPrice(0.0);
+        order.setConfirmed(true);
+        orderService.saveOrder(order);
+        model.addAttribute("order", order);
+        List<DeliveryAddress> deliveryAddresses = deliveryAddressService.getAllDeliveryAddresses();
+        model.addAttribute("deliveryAddresses", deliveryAddresses);
+        return "order-filler";
+    }
 //
-//
-//    @PostMapping("/order/confirm")
-//    public String orderConfirm(Model model, HttpServletRequest httpServletRequest, @ModelAttribute(name = "order") Order orderFromFrontend, Principal principal) {
-//        if (principal == null) {
-//            return "redirect:/login";
-//        }
-//        User user = userService.findByUserName(principal.getName());
-//        Order order = orderService.makeOrder(shoppingCartService.getCurrentCart(httpServletRequest.getSession()), user);
-//        order.setDeliveryAddress(orderFromFrontend.getDeliveryAddress());
-//        order.setPhoneNumber(orderFromFrontend.getPhoneNumber());
-//        order.setDeliveryDate(LocalDateTime.now().plusDays(7));
-//        order.setDeliveryPrice(0.0);
-//        order = orderService.saveOrder(order);
-//        model.addAttribute("order", order);
-//        return "order-filler";
-//    }
-////
-//    @GetMapping("/order/result/{id}")
-//    public String orderConfirm(Model model, @PathVariable(name = "id") Long id, Principal principal) {
-//        if (principal == null) {
-//            return "redirect:/login";
-//        }
-//        // todo ждем до оплаты, проверка безопасности и проблема с повторной отправкой письма сделать одноразовый вход
-//        User user = userService.findByUserName(principal.getName());
-//        Order confirmedOrder = orderService.findById(id);
-//        if (!user.getId().equals(confirmedOrder.getUser().getId())) {
-//            return "redirect:/";
-//        }
-//        model.addAttribute("order", confirmedOrder);
-//        return "order-result";
-//    }
+    @GetMapping("/order/result/{id}")
+    public String orderConfirm(Model model, @PathVariable(name = "id") Long id, Principal principal) {
+        if (principal == null) {
+            return "redirect:/login";
+        }
+        // todo ждем до оплаты, проверка безопасности и проблема с повторной отправкой письма сделать одноразовый вход
+        User user = userService.findByUserName(principal.getName());
+        Order confirmedOrder = orderService.findById(id);
+        if (!user.getId().equals(confirmedOrder.getUser().getId())) {
+            return "redirect:/";
+        }
+        model.addAttribute("order", confirmedOrder);
+        return "order-result";
+    }
 
 }

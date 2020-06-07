@@ -56,10 +56,13 @@
             <span>Укажите номер телефона</span>
             <input type="text" th:field="*{phoneNumber}" class="form-control input-sm">
             <br>
+
             <div class="col-sm-6 controls">
                 <button type="submit" class="btn btn-primary">Готово</button>
                 <button class="btn btn-secondary" th:href="@{/shop}">Вернуться в магазин</button>
             </div>
+
+
         </div>
         <div th:unless="${!order.confirmed}">
             <span th:text="'Адрес доставки: ' + ${order.deliveryAddress.address}"/>
